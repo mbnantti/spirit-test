@@ -53,6 +53,11 @@ struct ShowExecutor
         std::cout << "vlike " << int(vlike.type) << ' ' << vlike.pattern << "\n";
     }
 
+    void operator()(const sql_parser::ShowMisc& gen)
+    {
+        std::cout << "general sho " << int(gen.type) << "\n";
+    }
+
     void operator()(const sql_parser::ShowStatusLike& slike)
     {
         std::cout << "slike " << int(slike.type) << ' ' << slike.pattern << "\n";

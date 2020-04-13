@@ -17,29 +17,29 @@ namespace sql_parser
 // https://github.com/boostorg/spirit/pull/178 and https://github.com/boostorg/spirit/issues/463.
 
 // SELECT
-struct SelectVar
+struct SelectVar    // select @x
 {
-    std::string name;   // select @x
+    std::string name;
 };
 
-struct SelectGlob
+struct SelectGlob   // select @@z
 {
-    std::string name;   // select @@z
+    std::string name;
 };
 
-struct SelectFct
+struct SelectFct    // select foo()
 {
-    std::string name;   // select foo()
+    std::string name;
 };
 
-struct SelectNumber
+struct SelectNumber     // select 1, select 3.14
 {
-    double value;       // select 1, select 3.14
+    double value;
 };
 
-struct SelectString
+struct SelectString     // select "Hello World!"
 {
-    std::string str;    // select "Hello World!"
+    std::string str;
 };
 
 struct Select;
@@ -62,25 +62,39 @@ struct Select : public std::vector<SelectExpr>
 };
 
 // SHOW
-enum class ShowType {GLOBAL, SESSION, ALL};
+enum class ShowType {Global, Session, All};
 
 // All 'show' queries are grouped together, meaning they run in the same Visitor. No
 // particular reason for that, but it keeps things better organized.
-struct ShowVariablesLike
+struct ShowVariablesLike    // show [global|session] variables like 'hello'
 {
     ShowType    type;
     std::string pattern;
 };
 
-struct ShowStatusLike
+struct ShowStatusLike   // show [global|session] status like 'hello'
 {
     ShowType    type;
     std::string pattern;
+};
+
+// There are some very specific queries that do not carry any data, so an enum
+// and a single type for them. If need be, they can be split up later.
+// show master status
+// show slave status
+// show slave hosts
+// show warnings
+// show binary logs
+enum class ShowMiscType {MasterStatus, SlaveStatus, SlaveHosts, Warnings, BinaryLogs};
+struct ShowMisc
+{
+    ShowMiscType type;
 };
 
 struct Show : boost::spirit::x3::variant<
                 ShowVariablesLike
                 , ShowStatusLike
+                , ShowMisc
                 >
 {
     using base_type::base_type;

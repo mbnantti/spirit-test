@@ -41,6 +41,19 @@ struct SelectExecutor
     }
 };
 
+struct ShowExecutor
+{
+    void operator()(const sql_parser::Show& show)
+    {
+        boost::apply_visitor(*this, show);
+    }
+
+    void operator()(const sql_parser::ShowVariablesLike& vlike)
+    {
+        std::cout << "vlike " << int(vlike.type) << ' ' << vlike.pattern << "\n";
+    }
+};
+
 struct StmtExecutor
 {
     void operator()(const sql_parser::SqlStatement& stm)
@@ -54,6 +67,12 @@ struct StmtExecutor
     void operator()(const sql_parser::Select& sel)
     {
         SelectExecutor exec;
+        exec(sel);
+    }
+
+    void operator()(const sql_parser::Show& sel)
+    {
+        ShowExecutor exec;
         exec(sel);
     }
 

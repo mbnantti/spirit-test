@@ -16,6 +16,7 @@ namespace sql_parser
 // by doing it this way, fusion is not needed in several cases (c++14 takes care of it):
 // https://github.com/boostorg/spirit/pull/178 and https://github.com/boostorg/spirit/issues/463.
 
+// SELECT
 struct SelectVar
 {
     std::string name;   // select @x
@@ -60,13 +61,36 @@ struct Select : public std::vector<SelectExpr>
     using std::vector<SelectExpr>::vector;
 };
 
-struct ParseError   // Not an actual parser class, will stuff a good error message here
+// SHOW
+enum class ShowType {GLOBAL, SESSION, ALL};
+
+// All 'show' queries are grouped together, meaning they run in the same Visitor. No
+// particular reason for that, but it keeps things better organized.
+struct ShowVariablesLike
+{
+    ShowType    type;
+    std::string pattern;
+};
+
+struct Show : boost::spirit::x3::variant<
+                ShowVariablesLike
+                >
+{
+    using base_type::base_type;
+    using base_type::operator=;
+};
+
+/**
+ * @brief ParseError - not an actual parser class, this is returned for parsing errors.
+ */
+struct ParseError
 {
     std::string err_msg;
 };
 
 struct Command : boost::spirit::x3::variant<
                    Select
+                   , Show
                    , ParseError>
 {
     using base_type::base_type;

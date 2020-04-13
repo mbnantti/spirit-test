@@ -34,7 +34,8 @@ const auto quote = x3::omit[x3::char_("'")];
 const auto select_str_def = x3::lexeme['"' >> +(x3::char_ - '"') >> '"'];
 
 const auto select_expr = select_var | select_glob | select_fct | select_nbr | select_str;
-const auto select_def = x3::no_case["select"] >> select_expr % ",";
+const auto select_limit = "limit" >> x3::int_;
+const auto select_def = x3::no_case["select"] >> select_expr % "," >> -x3::omit[select_limit];
 const auto sql_stmt_def = select % ';' >> -x3::omit[";"];
 
 BOOST_SPIRIT_DEFINE(identifier, select_var, select_glob, select_fct, select_nbr, select_str, select,
@@ -42,10 +43,6 @@ BOOST_SPIRIT_DEFINE(identifier, select_var, select_glob, select_fct, select_nbr,
 
 SqlStatement parse_sql(const std::string& sql)
 {
-//    auto sql = maxbase::lower_case_copy(sql_cased);     // TODO keep case and use x3::no_case where needed
-//    maxbase::trim(sql);
-//    std::cout << "sql = " << sql << "\n";
-
     SqlStatement stmt;
     auto first = begin(sql);
     auto success = phrase_parse(first, end(sql), sql_stmt, x3::space, stmt);

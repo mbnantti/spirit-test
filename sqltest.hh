@@ -59,9 +59,9 @@ struct SelectExpr : boost::spirit::x3::variant<
     using base_type::operator=;
 };
 
-struct Select
+struct Select : public std::vector<SelectExpr>
 {
-    SelectExpr expr;
+    using std::vector<SelectExpr>::vector;
 };
 
 struct ParseError   // Not an actual parser class, will stuff a good error message here

@@ -103,7 +103,10 @@ struct SelectExecutor
 {
     void operator()(const sql_parser::Select& sel)
     {
-        boost::apply_visitor(*this, sel.expr);
+        for (auto& s : sel)
+        {
+            boost::apply_visitor(*this, s);
+        }
     }
 
     void operator()(const sql_parser::SelectVar& var)

@@ -11,7 +11,7 @@ BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectGlob, name);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectFct, name);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectNumber, value);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectString, str);
-BOOST_FUSION_ADAPT_STRUCT(sql_parser::Select, expr);
+// BOOST_FUSION_ADAPT_STRUCT(sql_parser::Select, expr);
 // BOOST_FUSION_ADAPT_STRUCT(sql_parser::SqlStatement, cmd);
 
 namespace sql_parser
@@ -35,7 +35,7 @@ const auto quote = x3::omit[x3::char_("'")];
 // TODO, single or double quote + escape. Need something like qi locals, maybe semantic action + x3::Context
 const auto select_str_def = x3::lexeme['"' >> +(x3::char_ - '"') >> '"'];
 
-const auto select_def = x3::no_case["select"] >> select_var | select_glob;
+const auto select_def = x3::no_case["select"] >> (select_var | select_glob) % ",";
 // const auto select_def = "select"
 //    >> (select_var | select_glob | select_fct | select_nbr | select_str);
 

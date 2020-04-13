@@ -45,7 +45,11 @@ struct Select;
 
 struct SelectExpr : boost::spirit::x3::variant<
                       SelectVar
-                      , SelectGlob>
+                      , SelectGlob
+                      , SelectFct
+                      , SelectNumber
+                      , SelectString
+                      >
 {
     using base_type::base_type;
     using base_type::operator=;

@@ -11,8 +11,6 @@ BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectGlob, name);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectFct, name);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectNumber, value);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectString, str);
-// BOOST_FUSION_ADAPT_STRUCT(sql_parser::Select, expr);
-// BOOST_FUSION_ADAPT_STRUCT(sql_parser::SqlStatement, cmd);
 
 namespace sql_parser
 {
@@ -28,20 +26,18 @@ const x3::rule<struct select_tag, SqlStatement> sql_stmt = "stmt";
 
 const auto identifier_def = x3::lexeme[(x3::alpha | x3::char_('_')) >> *(x3::alnum | x3::char_('_'))];
 const auto select_var_def = '@' >> identifier;
-// TODO optional - (minus)
-const auto select_glob_def = "@@" >> x3::lexeme[*x3::lit("global.") >> identifier];
+const auto select_glob_def = "@@" >> -x3::lexeme[x3::lit("global.") >> identifier];
 const auto select_fct_def = identifier >> x3::lit("()");
 const auto select_nbr_def = x3::double_;
 const auto quote = x3::omit[x3::char_("'")];
 // TODO, single or double quote + escape. Need something like qi locals, maybe semantic action + x3::Context
 const auto select_str_def = x3::lexeme['"' >> +(x3::char_ - '"') >> '"'];
 
-const auto select_def = x3::no_case["select"] >> (select_var | select_glob) % ",";
-const auto sql_stmt_def = *select;
-// const auto select_def = "select"
-//    >> (select_var | select_glob | select_fct | select_nbr | select_str);
+const auto select_expr = select_var | select_glob | select_fct | select_nbr | select_str;
+const auto select_def = x3::no_case["select"] >> select_expr % ",";
+const auto sql_stmt_def = select % ';' >> -x3::omit[";"];
 
-BOOST_SPIRIT_DEFINE(identifier, select_var, select_glob, select,
+BOOST_SPIRIT_DEFINE(identifier, select_var, select_glob, select_fct, select_nbr, select_str, select,
                     sql_stmt);
 
 SqlStatement parse_sql(const std::string& sql)

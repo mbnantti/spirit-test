@@ -5,7 +5,6 @@
 #include <vector>
 #include <map>
 
-
 struct SelectExecutor
 {
     void operator()(const sql_parser::Select& sel)
@@ -25,8 +24,22 @@ struct SelectExecutor
     {
         std::cout << "glob=" << glob.name << '\n';
     }
-};
 
+    void operator()(const sql_parser::SelectFct& fct)
+    {
+        std::cout << "func=" << fct.name << '\n';
+    }
+
+    void operator()(const sql_parser::SelectNumber& nbr)
+    {
+        std::cout << "number=" << nbr.value << '\n';
+    }
+
+    void operator()(const sql_parser::SelectString& str)
+    {
+        std::cout << "string=" << str.str << '\n';
+    }
+};
 
 struct StmtExecutor
 {

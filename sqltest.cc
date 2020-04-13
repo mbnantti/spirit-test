@@ -24,6 +24,7 @@ const x3::rule<struct select_fct_tag, SelectFct> select_fct = "select_fct";
 const x3::rule<struct select_nbr_tag, SelectNumber> select_nbr = "select_nbr";
 const x3::rule<struct select_str_tag, SelectString> select_str = "select_str";
 const x3::rule<struct select_tag, Select> select = "select";
+const x3::rule<struct select_tag, SqlStatement> sql_stmt = "stmt";
 
 const auto identifier_def = x3::lexeme[(x3::alpha | x3::char_('_')) >> *(x3::alnum | x3::char_('_'))];
 const auto select_var_def = '@' >> identifier;
@@ -36,36 +37,31 @@ const auto quote = x3::omit[x3::char_("'")];
 const auto select_str_def = x3::lexeme['"' >> +(x3::char_ - '"') >> '"'];
 
 const auto select_def = x3::no_case["select"] >> (select_var | select_glob) % ",";
+const auto sql_stmt_def = *select;
 // const auto select_def = "select"
 //    >> (select_var | select_glob | select_fct | select_nbr | select_str);
 
-BOOST_SPIRIT_DEFINE(identifier,
-                    select_var,
-                    select_glob,
-                    select);
+BOOST_SPIRIT_DEFINE(identifier, select_var, select_glob, select,
+                    sql_stmt);
 
-Select parse_sql(const std::string& sql)
+SqlStatement parse_sql(const std::string& sql)
 {
 //    auto sql = maxbase::lower_case_copy(sql_cased);     // TODO keep case and use x3::no_case where needed
 //    maxbase::trim(sql);
 //    std::cout << "sql = " << sql << "\n";
 
-    auto sql_parser = select;       // need an optional ;, but -';' generates an attribute
-
-    Select stm;
+    SqlStatement stmt;
     auto first = begin(sql);
-    auto success = phrase_parse(first, end(sql), sql_parser, x3::space, stm);
+    auto success = phrase_parse(first, end(sql), sql_stmt, x3::space, stmt);
 
-    return stm;
-
-//    if (success && first == end(sql))
-//    {
-//        return stm;
-//    }
-//    else
-//    {
-//        Command error {ParseError {"error"}};
-//        return SqlStatement {error};
-//    }
+    if (success && first == end(sql))
+    {
+        return stmt;
+    }
+    else
+    {
+        Command error {ParseError {"error"}};
+        return SqlStatement {error};
+    }
 }
 }

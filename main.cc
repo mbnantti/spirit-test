@@ -73,14 +73,37 @@ int main1()
     return 0;
 }
 
-struct TestExecutor
+// struct TestExecutor
+// {
+//    void operator()(const sql_parser::SqlStatement& stm)
+//    {
+//        for (auto& c : stm)
+//        {
+//            boost::apply_visitor(*this, c);
+//        }
+//    }
+
+//    void operator()(const sql_parser::SelectVar& var)
+//    {
+//        std::cout << "var=" << var.name << '\n';
+//    }
+
+//    void operator()(const sql_parser::SelectGlob& glob)
+//    {
+//        std::cout << "glob=" << glob.name << '\n';
+//    }
+
+//    void operator()(const sql_parser::ParseError& error)
+//    {
+//        std::cout << "error " << error.err_msg << '\n';
+//    }
+// };
+
+struct SelectExecutor
 {
-    void operator()(const sql_parser::SqlStatement& stm)
+    void operator()(const sql_parser::Select& sel)
     {
-        for (auto& c : stm)
-        {
-            boost::apply_visitor(*this, c);
-        }
+        boost::apply_visitor(*this, sel.expr);
     }
 
     void operator()(const sql_parser::SelectVar& var)
@@ -92,12 +115,8 @@ struct TestExecutor
     {
         std::cout << "glob=" << glob.name << '\n';
     }
-
-    void operator()(const sql_parser::ParseError& error)
-    {
-        std::cout << "error " << error.err_msg << '\n';
-    }
 };
+
 
 
 int main()
@@ -112,8 +131,10 @@ int main()
         for (int n = 0; n < 1; ++n)
         {
             auto result = sql_parser::parse_sql(sql);
-            TestExecutor exec;
-            exec(result);
+            // TestExecutor exec;
+            // exec(result);
+            SelectExecutor sel;
+            sel(result);
         }
     }
 

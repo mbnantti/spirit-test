@@ -49,12 +49,19 @@ struct SelectString
     std::string str;    // select "Hello World!"
 };
 
-struct Select : boost::spirit::x3::variant<
-                  SelectVar
-                  , SelectGlob>
+struct Select;
+
+struct SelectExpr : boost::spirit::x3::variant<
+                      SelectVar
+                      , SelectGlob>
 {
     using base_type::base_type;
     using base_type::operator=;
+};
+
+struct Select
+{
+    SelectExpr expr;
 };
 
 struct ParseError   // Not an actual parser class, will stuff a good error message here
@@ -63,8 +70,7 @@ struct ParseError   // Not an actual parser class, will stuff a good error messa
 };
 
 struct Command : boost::spirit::x3::variant<
-                   SelectVar
-                   , SelectGlob
+                   Select
                    , ParseError>
 {
     using base_type::base_type;
@@ -76,5 +82,5 @@ struct SqlStatement : public std::vector<Command>
     using std::vector<Command>::vector;
 };
 
-SqlStatement parse_sql(const std::string& sql);
+Select parse_sql(const std::string& sql);
 }

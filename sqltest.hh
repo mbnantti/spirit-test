@@ -72,8 +72,15 @@ struct ShowVariablesLike
     std::string pattern;
 };
 
+struct ShowStatusLike
+{
+    ShowType    type;
+    std::string pattern;
+};
+
 struct Show : boost::spirit::x3::variant<
                 ShowVariablesLike
+                , ShowStatusLike
                 >
 {
     using base_type::base_type;

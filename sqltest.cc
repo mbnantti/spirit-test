@@ -17,6 +17,7 @@ BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectFct, name);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectNumber, value);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SelectString, str);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowVariablesLike, type, pattern);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowStatusLike, type, pattern);
 
 namespace sql_parser
 {
@@ -28,7 +29,7 @@ struct ShowTypeKeys : x3::symbols<ShowType>
         add ("global", ShowType::GLOBAL)    //
         ("session", ShowType::SESSION);
     }
-} const show_var_type_keys;
+} const show_type_keys;
 
 const x3::rule<struct identifier_tag, std::string> identifier = "identifier";
 const x3::rule<struct quoted_tag, std::string> quoted_str = "quoted";
@@ -41,6 +42,7 @@ const x3::rule<struct select_str_tag, SelectString> select_str = "select_str";
 const x3::rule<struct select_tag, Select> select = "select";
 
 const x3::rule<struct show_vlike_tag, ShowVariablesLike> show_vlike = "show_vlike";
+const x3::rule<struct show_slike_tag, ShowStatusLike> show_slike = "show_slike";
 const x3::rule<struct select_tag, Show> show = "show";
 
 const x3::rule<struct select_tag, SqlStatement> sql_stmt = "stmt";
@@ -59,15 +61,17 @@ const auto select_expr = select_var | select_glob | select_fct | select_nbr | se
 const auto select_limit = "limit" >> x3::int_;
 const auto select_def = x3::no_case["select"] >> select_expr % "," >> -x3::omit[select_limit];
 
-const auto show_vlike_def = (show_var_type_keys | x3::attr(ShowType::ALL)) >> "variables"
+const auto show_vlike_def = (show_type_keys | x3::attr(ShowType::ALL)) >> "variables"
     >> "like" >> quoted_str;
-const auto show_def = "show" >> show_vlike;
+const auto show_slike_def = (show_type_keys | x3::attr(ShowType::ALL)) >> "status"
+    >> "like" >> quoted_str;
+const auto show_def = "show" >> (show_vlike | show_slike);
 
 const auto sql_stmt_def = (select | show) % ';' >> -x3::omit[";"];
 
 BOOST_SPIRIT_DEFINE(identifier, quoted_str,
                     select_var, select_glob, select_fct, select_nbr, select_str, select,
-                    show_vlike, show,
+                    show_vlike, show_slike, show,
                     sql_stmt);
 
 SqlStatement parse_sql(const std::string& sql)

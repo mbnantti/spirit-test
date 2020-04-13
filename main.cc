@@ -52,6 +52,11 @@ struct ShowExecutor
     {
         std::cout << "vlike " << int(vlike.type) << ' ' << vlike.pattern << "\n";
     }
+
+    void operator()(const sql_parser::ShowStatusLike& slike)
+    {
+        std::cout << "slike " << int(slike.type) << ' ' << slike.pattern << "\n";
+    }
 };
 
 struct StmtExecutor

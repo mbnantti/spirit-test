@@ -24,7 +24,7 @@ BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowMisc, type);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetNames, char_set);
 // BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetSqlMode, val);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAutocommit, val);
-// BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAssign, lhs, rhs);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAssignOne, lhs, rhs);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::Set, setv);
 
 namespace sql_parser
@@ -41,12 +41,11 @@ struct ShowTypeKeys : x3::symbols<Domain>
 
 const x3::rule<struct identifier_tag, std::string> identifier = "identifier";
 const x3::rule<struct quoted_tag, std::string> quoted_str = "quoted";
+const x3::rule<struct number_tag, Number> number = "number";
 const x3::rule<struct boolean_tag, bool> boolean = "boolean";
 
-const x3::rule<struct session_var_tag, Variable> session_var = "session_var";
-const x3::rule<struct global_var_tag, Variable> global_var = "global_var";
+const x3::rule<struct variable_tag, Variable> variable = "variable";
 const x3::rule<struct function_tag, Function> function = "function";
-const x3::rule<struct select_nbr_tag, Number> select_nbr = "select_nbr";
 const x3::rule<struct select_str_tag, StringIdent> select_str = "select_str";
 const x3::rule<struct select_tag, Select> select = "select";
 
@@ -58,6 +57,7 @@ const x3::rule<struct select_tag, Show> show = "show";
 const x3::rule<struct set_names_tag, SetNames> set_names = "set_names";
 const x3::rule<struct set_sql_mode_tag, SetSqlMode> set_sql_mode = "set_sql_mode";
 const x3::rule<struct set_autocommit_tag, SetAutocommit> set_autocommit = "set_autocommit";
+const x3::rule<struct set_assign_st_tag, StringIdent> set_assign_str = "set_assign_str";
 const x3::rule<struct set_assign_tag, SetAssign> set_assign = "set_assign";
 const x3::rule<struct set_tag, Set> set = "set";
 
@@ -66,15 +66,16 @@ const x3::rule<struct select_tag, SqlStatement> sql_stmt = "stmt";
 const auto identifier_def = x3::lexeme[(x3::alpha | x3::char_('_')) >> *(x3::alnum | x3::char_('_'))];
 const auto quoted_str_def = x3::lexeme['"' >> +(('\\' >> x3::char_) | (x3::char_ - '"')) >> '"']
     | x3::lexeme['\'' >> +(('\\' >> x3::char_) | (x3::char_ - '\'')) >> '\''];
-const auto session_var_def = '@' >> identifier >> x3::attr(false);
-const auto global_var_def = "@@" >> x3::lexeme[-x3::lit("global.") >> identifier] >> x3::attr(true);
+const auto session_var = '@' >> identifier >> x3::attr(false);
+const auto global_var = "@@" >> x3::lexeme[-x3::lit("global.") >> identifier] >> x3::attr(true);
+const auto variable_def = session_var | global_var;
 const auto function_def = identifier >> x3::lit("()");
 const auto boolean_def = ((x3::lit("true") | "1") >> x3::attr(true)
                           | (x3::lit("false") | "0") >> x3::attr(false));
 
-const auto select_nbr_def = x3::double_;
+const auto number_def = x3::double_;
 const auto select_str_def = quoted_str;
-const auto select_expr = session_var | global_var | function | select_nbr | select_str;
+const auto select_expr = variable | function | number | select_str;
 const auto select_limit = "limit" >> x3::int_;
 const auto select_def = x3::no_case["select"] >> select_expr % "," >> -x3::omit[select_limit];
 
@@ -93,14 +94,17 @@ const auto set_sql_mode_def = x3::lit("sql_mode") >> '='
     >> (('"' >> (*(x3::char_ - '"') % ',') >> '"')
         | ('\'' >> (*(x3::char_ - '\'') % ',') >> '\''));
 const auto set_autocommit_def = x3::lit("autocommit") >> '=' >> boolean;
-const auto set_def = "set" >> (set_names | set_sql_mode | set_autocommit);
+const auto set_assign_str_def = quoted_str;
+const auto set_assign_expr = variable >> '=' >> (variable | number | set_assign_str);
+const auto set_assign_def = set_assign_expr % ',';
+const auto set_def = "set" >> (set_names | set_sql_mode | set_autocommit | set_assign);
 
 const auto sql_stmt_def = (select | set) % ';' >> -x3::omit[";"];
 
 BOOST_SPIRIT_DEFINE(identifier, quoted_str, boolean,
-                    session_var, global_var, function, select_nbr, select_str, select,
+                    variable, function, number, select_str, select,
                     show_var_like, show_status_like, show_misc, show,
-                    set_names, set_sql_mode, set_autocommit, set,
+                    set_names, set_sql_mode, set_autocommit, set_assign_str, set_assign, set,
                     sql_stmt);
 
 SqlStatement parse_sql(const std::string& sql)

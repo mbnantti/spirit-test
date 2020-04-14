@@ -129,17 +129,22 @@ struct SetAssignRhs : boost::spirit::x3::variant<
     using base_type::operator=;
 };
 
-struct SetAssign
+struct SetAssignOne
 {
     Variable     lhs;
     SetAssignRhs rhs;
+};
+
+struct SetAssign : std::vector<SetAssignOne>
+{
+    using std::vector<SetAssignOne>::vector;
 };
 
 struct SetVariant : boost::spirit::x3::variant<
                       SetNames          // set names latin1
                       , SetSqlMode      // set sql_mode "a,b,c"
                       , SetAutocommit   // set autocommit = true | false | 0 | 1
-//                      , SetAssign       // set variable = variable | number | string
+                      , SetAssign       // set variable = variable | number | string
                       >
 {
     using base_type::base_type;

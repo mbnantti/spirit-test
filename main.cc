@@ -58,10 +58,30 @@ struct SetExecutor
         std::cout << "autocommit = " << std::boolalpha << autocommit.val << "\n";
     }
 
-//    void operator()(const sql_parser::SetAssign& str)
-//    {
-//        std::cout << "ASSIGN\n";
-//    }
+    void operator()(const sql_parser::SetAssign& sass)
+    {
+        for (const auto& ass : sass)
+        {
+            std::cout << (ass.lhs.is_global ? "@@" : "@") << ass.lhs.name << " <- ";
+            boost::apply_visitor(*this, ass.rhs);
+            std::cout << '\n';
+        }
+    }
+
+    void operator()(const sql_parser::Variable& v)
+    {
+        std::cout << (v.is_global ? "@@" : "@") << v.name;
+    }
+
+    void operator()(const sql_parser::Number& n)
+    {
+        std::cout << n.value;
+    }
+
+    void operator()(const sql_parser::StringIdent& si)
+    {
+        std::cout << si.str;
+    }
 };
 
 struct ShowExecutor
@@ -73,17 +93,17 @@ struct ShowExecutor
 
     void operator()(const sql_parser::ShowVariablesLike& var_like)
     {
-        std::cout << "var_like " << int(var_like.type) << ' ' << var_like.pattern << "\n";
+        std::cout << "var like " << int(var_like.type) << ' ' << var_like.pattern << "\n";
     }
 
     void operator()(const sql_parser::ShowMisc& gen)
     {
-        std::cout << "general sho " << int(gen.type) << "\n";
+        std::cout << "general show " << int(gen.type) << "\n";
     }
 
     void operator()(const sql_parser::ShowStatusLike& slike)
     {
-        std::cout << "slike " << int(slike.type) << ' ' << slike.pattern << "\n";
+        std::cout << "status like " << int(slike.type) << ' ' << slike.pattern << "\n";
     }
 };
 

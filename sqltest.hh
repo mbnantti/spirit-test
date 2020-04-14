@@ -160,6 +160,18 @@ struct Set
     SetVariant setv;
 };
 
+enum class Slave {Start, Stop, Reset};
+
+struct SlaveCmd
+{
+    Slave cmd;
+};
+
+struct ChangeMasterTo
+{
+    std::string str;    // the entire key=value pair list as it appears in the sql. TODO
+};
+
 /**
  * @brief ParseError - not an actual parser class, this is returned for parsing errors.
  */
@@ -172,6 +184,7 @@ struct Command : boost::spirit::x3::variant<
                    Select
                    , Show
                    , Set
+                   , SlaveCmd
                    , ParseError>
 {
     using base_type::base_type;

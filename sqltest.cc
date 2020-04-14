@@ -22,10 +22,11 @@ BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowVariablesLike, type, pattern);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowStatusLike, type, pattern);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowMisc, type);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetNames, char_set);
-// BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetSqlMode, val);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAutocommit, val);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAssignOne, lhs, rhs);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::Set, setv);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::SlaveCmd, cmd);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::ChangeMasterTo, str);
 
 namespace sql_parser
 {
@@ -60,6 +61,10 @@ const x3::rule<struct set_autocommit_tag, SetAutocommit> set_autocommit = "set_a
 const x3::rule<struct set_assign_st_tag, StringIdent> set_assign_str = "set_assign_str";
 const x3::rule<struct set_assign_tag, SetAssign> set_assign = "set_assign";
 const x3::rule<struct set_tag, Set> set = "set";
+
+const x3::rule<struct set_slave_tag, SlaveCmd> slave_cmd = "slave_cmd";
+// const x3::rule<struct set_master_tag, ChangeMasterTo> change_master = "change_master";
+
 
 const x3::rule<struct select_tag, SqlStatement> sql_stmt = "stmt";
 
@@ -99,12 +104,17 @@ const auto set_assign_expr = variable >> '=' >> (variable | number | set_assign_
 const auto set_assign_def = set_assign_expr % ',';
 const auto set_def = "set" >> (set_names | set_sql_mode | set_autocommit | set_assign);
 
-const auto sql_stmt_def = (select | set) % ';' >> -x3::omit[";"];
+const auto slave_cmd_def = x3::lit("start") >> "slave" >> x3::attr(Slave::Start)
+    | x3::lit("stop") >> "slave" >> x3::attr(Slave::Stop)
+    | x3::lit("reset") >> "slave" >> x3::attr(Slave::Reset);
+
+const auto sql_stmt_def = (select | set | slave_cmd) % ';' >> -x3::omit[";"];
 
 BOOST_SPIRIT_DEFINE(identifier, quoted_str, boolean,
                     variable, function, number, select_str, select,
                     show_var_like, show_status_like, show_misc, show,
                     set_names, set_sql_mode, set_autocommit, set_assign_str, set_assign, set,
+                    slave_cmd,
                     sql_stmt);
 
 SqlStatement parse_sql(const std::string& sql)

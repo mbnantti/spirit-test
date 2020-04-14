@@ -139,6 +139,11 @@ struct StmtExecutor
     {
         std::cout << "error " << error.err_msg << '\n';
     }
+
+    void operator()(const sql_parser::SlaveCmd& cmd)
+    {
+        std::cout << "slave cmd  " << int(cmd.cmd) << '\n';
+    }
 };
 
 int main()

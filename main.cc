@@ -1,5 +1,5 @@
 #include "sqltest.hh"
-
+#include <maxbase/string.hh>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -34,6 +34,34 @@ struct SelectExecutor
     {
         std::cout << "string=" << str.str << '\n';
     }
+};
+
+struct SetExecutor
+{
+    void operator()(const sql_parser::Set& set)
+    {
+        boost::apply_visitor(*this, set.setv);
+    }
+
+    void operator()(const sql_parser::SetNames& names)
+    {
+        std::cout << "char_set " << names.char_set << '\n';
+    }
+
+    void operator()(const sql_parser::SetSqlMode& mode)
+    {
+        std::cout << maxbase::join(mode) << "\n";
+    }
+
+    void operator()(const sql_parser::SetAutocommit& autocommit)
+    {
+        std::cout << "autocommit = " << std::boolalpha << autocommit.val << "\n";
+    }
+
+//    void operator()(const sql_parser::SetAssign& str)
+//    {
+//        std::cout << "ASSIGN\n";
+//    }
 };
 
 struct ShowExecutor
@@ -79,6 +107,12 @@ struct StmtExecutor
     {
         ShowExecutor exec;
         exec(sel);
+    }
+
+    void operator()(const sql_parser::Set& set)
+    {
+        SetExecutor exec;
+        exec(set);
     }
 
     void operator()(const sql_parser::ParseError& error)

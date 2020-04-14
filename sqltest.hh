@@ -11,12 +11,11 @@ namespace sql_parser
 // For x3 see https://www.boost.org/doc/libs/develop/libs/spirit/doc/x3/html/index.html
 // The documentation is sparse. Lots of googling, and paying attention to posts by @sehe on stackoverflow
 // helps: https://stackoverflow.com/users/85371/sehe.
-// The reason for inheriting vectors (conainers), and the operator= in other classes is two-fold.
+// The reason for inheriting vectors (containers), and the operator= in other classes is two-fold.
 // First, boost spirit x3 single-element fusion sequences do not work as expected, and second,
 // by doing it this way, fusion is not needed in several cases (c++14 takes care of it):
 // https://github.com/boostorg/spirit/pull/178 and https://github.com/boostorg/spirit/issues/463.
 
-// SELECT
 struct Variable
 {
     std::string name;
@@ -37,12 +36,14 @@ struct StringIdent
 };
 
 /**
- * @brief Function - nor arguments need to be supported yet
+ * @brief Function - no arguments need to be supported yet
  */
 struct Function
 {
     std::string name;
 };
+
+// SELECT
 
 struct Select;
 
@@ -80,7 +81,7 @@ struct ShowStatusLike   // show [global|session] status like 'hello'
 };
 
 // There are some very specific show queries that do not carry any data, so an enum
-// and a single type for them. If need be, they can be split up later.
+// and a single type for them. If needed, they can be split up later.
 // show master status
 // show slave status
 // show slave hosts
@@ -102,6 +103,58 @@ struct Show : boost::spirit::x3::variant<
     using base_type::operator=;
 };
 
+// SET
+struct SetNames
+{
+    std::string char_set;
+};
+
+struct SetSqlMode : public std::vector<std::string>
+{
+    using std::vector<std::string>::vector;
+};
+
+struct SetAutocommit
+{
+    bool val;
+};
+
+struct SetAssignRhs : boost::spirit::x3::variant<
+                        Variable
+                        , Number
+                        , StringIdent
+                        >
+{
+    using base_type::base_type;
+    using base_type::operator=;
+};
+
+struct SetAssign
+{
+    Variable     lhs;
+    SetAssignRhs rhs;
+};
+
+struct SetVariant : boost::spirit::x3::variant<
+                      SetNames          // set names latin1
+                      , SetSqlMode      // set sql_mode "a,b,c"
+                      , SetAutocommit   // set autocommit = true | false | 0 | 1
+//                      , SetAssign       // set variable = variable | number | string
+                      >
+{
+    using base_type::base_type;
+    using base_type::operator=;
+};
+
+/**
+ * @brief Set - Extra indirection needed for fusion, this is just a SetVariant.
+ *              (Maybe the indirection is not needed, it was at one point).
+ */
+struct Set
+{
+    SetVariant setv;
+};
+
 /**
  * @brief ParseError - not an actual parser class, this is returned for parsing errors.
  */
@@ -113,6 +166,7 @@ struct ParseError
 struct Command : boost::spirit::x3::variant<
                    Select
                    , Show
+                   , Set
                    , ParseError>
 {
     using base_type::base_type;

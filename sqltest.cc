@@ -9,6 +9,9 @@
 //       case-insensitive parser p needs to be modified to x3::no_case[p]. Further, there could be
 //       reason to modify the case of some extracted strings?
 
+// Literal ints x3::int_(42) do not work (the constructor is not there!). If needed,
+// nice workaround https://github.com/boostorg/spirit/issues/390
+
 namespace x3 = boost::spirit::x3;
 
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::Variable, name, is_global);
@@ -18,6 +21,11 @@ BOOST_FUSION_ADAPT_STRUCT(sql_parser::StringIdent, str);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowVariablesLike, type, pattern);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowStatusLike, type, pattern);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::ShowMisc, type);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetNames, char_set);
+// BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetSqlMode, val);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAutocommit, val);
+// BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAssign, lhs, rhs);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::Set, setv);
 
 namespace sql_parser
 {
@@ -33,6 +41,7 @@ struct ShowTypeKeys : x3::symbols<Domain>
 
 const x3::rule<struct identifier_tag, std::string> identifier = "identifier";
 const x3::rule<struct quoted_tag, std::string> quoted_str = "quoted";
+const x3::rule<struct boolean_tag, bool> boolean = "boolean";
 
 const x3::rule<struct session_var_tag, Variable> session_var = "session_var";
 const x3::rule<struct global_var_tag, Variable> global_var = "global_var";
@@ -46,17 +55,24 @@ const x3::rule<struct show_status_like_tag, ShowStatusLike> show_status_like = "
 const x3::rule<struct show_misc_tag, ShowMisc> show_misc = "show_misc";
 const x3::rule<struct select_tag, Show> show = "show";
 
+const x3::rule<struct set_names_tag, SetNames> set_names = "set_names";
+const x3::rule<struct set_sql_mode_tag, SetSqlMode> set_sql_mode = "set_sql_mode";
+const x3::rule<struct set_autocommit_tag, SetAutocommit> set_autocommit = "set_autocommit";
+const x3::rule<struct set_assign_tag, SetAssign> set_assign = "set_assign";
+const x3::rule<struct set_tag, Set> set = "set";
+
 const x3::rule<struct select_tag, SqlStatement> sql_stmt = "stmt";
 
 const auto identifier_def = x3::lexeme[(x3::alpha | x3::char_('_')) >> *(x3::alnum | x3::char_('_'))];
 const auto quoted_str_def = x3::lexeme['"' >> +(('\\' >> x3::char_) | (x3::char_ - '"')) >> '"']
     | x3::lexeme['\'' >> +(('\\' >> x3::char_) | (x3::char_ - '\'')) >> '\''];
-
 const auto session_var_def = '@' >> identifier >> x3::attr(false);
 const auto global_var_def = "@@" >> x3::lexeme[-x3::lit("global.") >> identifier] >> x3::attr(true);
 const auto function_def = identifier >> x3::lit("()");
+const auto boolean_def = ((x3::lit("true") | "1") >> x3::attr(true)
+                          | (x3::lit("false") | "0") >> x3::attr(false));
+
 const auto select_nbr_def = x3::double_;
-const auto quote = x3::omit[x3::char_("'")];
 const auto select_str_def = quoted_str;
 const auto select_expr = session_var | global_var | function | select_nbr | select_str;
 const auto select_limit = "limit" >> x3::int_;
@@ -72,11 +88,19 @@ const auto binlogs = x3::lit("binary") >> "logs" >> x3::attr(ShowMiscType::Binar
 const auto show_misc_def = master_stat | slave_stat | slave_hosts | warnings | binlogs;
 const auto show_def = "show" >> (show_var_like | show_status_like | show_misc);
 
-const auto sql_stmt_def = (select | show) % ';' >> -x3::omit[";"];
+const auto set_names_def = "names" >> (quoted_str | x3::lexeme[*x3::char_]);
+const auto set_sql_mode_def = x3::lit("sql_mode") >> '='
+    >> (('"' >> (*(x3::char_ - '"') % ',') >> '"')
+        | ('\'' >> (*(x3::char_ - '\'') % ',') >> '\''));
+const auto set_autocommit_def = x3::lit("autocommit") >> '=' >> boolean;
+const auto set_def = "set" >> (set_names | set_sql_mode | set_autocommit);
 
-BOOST_SPIRIT_DEFINE(identifier, quoted_str,
+const auto sql_stmt_def = (select | set) % ';' >> -x3::omit[";"];
+
+BOOST_SPIRIT_DEFINE(identifier, quoted_str, boolean,
                     session_var, global_var, function, select_nbr, select_str, select,
                     show_var_like, show_status_like, show_misc, show,
+                    set_names, set_sql_mode, set_autocommit, set,
                     sql_stmt);
 
 SqlStatement parse_sql(const std::string& sql)

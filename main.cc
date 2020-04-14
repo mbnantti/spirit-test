@@ -15,14 +15,9 @@ struct SelectExecutor
         }
     }
 
-    void operator()(const sql_parser::SessionVariable& var)
+    void operator()(const sql_parser::Variable& var)
     {
-        std::cout << "var=" << var.name << '\n';
-    }
-
-    void operator()(const sql_parser::GlobalVariable& glob)
-    {
-        std::cout << "glob=" << glob.name << '\n';
+        std::cout << "var=" << var.name << " global=" << std::boolalpha << var.is_global << '\n';
     }
 
     void operator()(const sql_parser::Function& fct)

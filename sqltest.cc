@@ -11,8 +11,7 @@
 
 namespace x3 = boost::spirit::x3;
 
-BOOST_FUSION_ADAPT_STRUCT(sql_parser::SessionVariable, name);
-BOOST_FUSION_ADAPT_STRUCT(sql_parser::GlobalVariable, name);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::Variable, name, is_global);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::Function, name);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::Number, value);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::StringIdent, str);
@@ -35,8 +34,8 @@ struct ShowTypeKeys : x3::symbols<Domain>
 const x3::rule<struct identifier_tag, std::string> identifier = "identifier";
 const x3::rule<struct quoted_tag, std::string> quoted_str = "quoted";
 
-const x3::rule<struct session_var_tag, SessionVariable> session_var = "session_var";
-const x3::rule<struct global_var_tag, GlobalVariable> global_var = "global_var";
+const x3::rule<struct session_var_tag, Variable> session_var = "session_var";
+const x3::rule<struct global_var_tag, Variable> global_var = "global_var";
 const x3::rule<struct function_tag, Function> function = "function";
 const x3::rule<struct select_nbr_tag, Number> select_nbr = "select_nbr";
 const x3::rule<struct select_str_tag, StringIdent> select_str = "select_str";
@@ -53,8 +52,8 @@ const auto identifier_def = x3::lexeme[(x3::alpha | x3::char_('_')) >> *(x3::aln
 const auto quoted_str_def = x3::lexeme['"' >> +(('\\' >> x3::char_) | (x3::char_ - '"')) >> '"']
     | x3::lexeme['\'' >> +(('\\' >> x3::char_) | (x3::char_ - '\'')) >> '\''];
 
-const auto session_var_def = '@' >> identifier;
-const auto global_var_def = "@@" >> -x3::lexeme[x3::lit("global.") >> identifier];
+const auto session_var_def = '@' >> identifier >> x3::attr(false);
+const auto global_var_def = "@@" >> x3::lexeme[-x3::lit("global.") >> identifier] >> x3::attr(true);
 const auto function_def = identifier >> x3::lit("()");
 const auto select_nbr_def = x3::double_;
 const auto quote = x3::omit[x3::char_("'")];

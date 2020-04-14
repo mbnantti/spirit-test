@@ -17,14 +17,10 @@ namespace sql_parser
 // https://github.com/boostorg/spirit/pull/178 and https://github.com/boostorg/spirit/issues/463.
 
 // SELECT
-struct SessionVariable
+struct Variable
 {
     std::string name;
-};
-
-struct GlobalVariable
-{
-    std::string name;
+    bool        is_global;
 };
 
 struct Number
@@ -51,11 +47,10 @@ struct Function
 struct Select;
 
 struct SelectExpr : boost::spirit::x3::variant<
-                      SessionVariable   // select @x
-                      , GlobalVariable  // select @@z
-                      , Function        // select foo()
-                      , Number          // select 1, select 3.14
-                      , StringIdent     // select "Hello World!"
+                      Variable      // select @x
+                      , Function    // select foo()
+                      , Number      // select 1, select 3.14
+                      , StringIdent // select "Hello World!"
                       >
 {
     using base_type::base_type;
@@ -105,17 +100,6 @@ struct Show : boost::spirit::x3::variant<
 {
     using base_type::base_type;
     using base_type::operator=;
-};
-
-// SET
-/**
- * @brief SetOperand
- */
-struct SetOperand
-{
-    std::string name;
-    bool        is_variable;
-    bool        is_global;
 };
 
 /**

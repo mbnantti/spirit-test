@@ -144,6 +144,15 @@ struct StmtExecutor
     {
         std::cout << "slave cmd  " << int(cmd.cmd) << '\n';
     }
+
+    void operator()(const sql_parser::ChangeMasterTo& cmt)
+    {
+        std::cout << "change master to:\n";
+        for (const auto& kv : cmt)
+        {
+            std::cout << "  " << kv.key << " = " << kv.value << '\n';
+        }
+    }
 };
 
 int main()

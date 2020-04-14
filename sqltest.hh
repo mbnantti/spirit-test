@@ -167,9 +167,15 @@ struct SlaveCmd
     Slave cmd;
 };
 
-struct ChangeMasterTo
+struct KeyValue
 {
-    std::string str;    // the entire key=value pair list as it appears in the sql. TODO
+    std::string key;
+    std::string value;
+};
+
+struct ChangeMasterTo : public std::vector<KeyValue>    // could not get pair<string, string> or map to work
+{
+    using std::vector<KeyValue>::vector;
 };
 
 /**
@@ -185,6 +191,7 @@ struct Command : boost::spirit::x3::variant<
                    , Show
                    , Set
                    , SlaveCmd
+                   , ChangeMasterTo
                    , ParseError>
 {
     using base_type::base_type;

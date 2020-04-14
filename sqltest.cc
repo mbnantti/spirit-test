@@ -12,6 +12,27 @@
 // Literal ints x3::int_(42) do not work (the constructor is not there!). If needed,
 // nice workaround https://github.com/boostorg/spirit/issues/390
 
+// NOTE: When adding things, start with the top rule (like say, change_master_def) and once that
+//       works, break it up part by part. Define all parsers as an x3::rule and a PEG (the _def),
+//       and in BOOST_SPIRIT_DEFINE. Only defining the PEG may work, but then break on some compound
+//       parser (later). Of course everything becomes clear reading the x3 and fusion templates,
+//       but that takes time. ChangeMasterTo could be a std::map<std::string, std::string>. In
+//       hindsite I think I might have missed some small detail when it failed to compile as a
+//       map and I just defined the key-value separately. It's now a vector which has the benefit
+//       that it preserves the order of the key value pairs.
+
+// NOTE: With the method of making everything a struct and using variants you essentially get an
+//       AST with the final data right out of the parser. I an not sure it scales that well, if
+//       one were to parse a complete language, and especially if there was code generation
+//       from the AST. Not sure, I might be wrong.
+//       I made everything but ChangeMasterTo use variants. I don't think it is always
+//       convenient to write a visitor to extract the data. For example, SetAssignRhs
+//       could be a simple struct with a type and enough members to carry the data. It
+//       could then be simpler to code and read the visitor (executor). But, again,
+//       I might be wrong and this is the right way to go.
+
+// PS. I think everything a replication slave throws at pinloki is here now.
+
 namespace x3 = boost::spirit::x3;
 
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::Variable, name, is_global);
@@ -26,7 +47,7 @@ BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAutocommit, val);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SetAssignOne, lhs, rhs);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::Set, setv);
 BOOST_FUSION_ADAPT_STRUCT(sql_parser::SlaveCmd, cmd);
-BOOST_FUSION_ADAPT_STRUCT(sql_parser::ChangeMasterTo, str);
+BOOST_FUSION_ADAPT_STRUCT(sql_parser::KeyValue, key, value);
 
 namespace sql_parser
 {
@@ -63,7 +84,10 @@ const x3::rule<struct set_assign_tag, SetAssign> set_assign = "set_assign";
 const x3::rule<struct set_tag, Set> set = "set";
 
 const x3::rule<struct set_slave_tag, SlaveCmd> slave_cmd = "slave_cmd";
-// const x3::rule<struct set_master_tag, ChangeMasterTo> change_master = "change_master";
+const x3::rule<struct key_value_tag, KeyValue> key_value = "key_value";
+const x3::rule<struct change_master_key_tag, std::string> change_master_key;
+const x3::rule<struct change_master_value_tag, std::string> change_master_value;
+const x3::rule<struct set_master_tag, ChangeMasterTo> change_master;
 
 
 const x3::rule<struct select_tag, SqlStatement> sql_stmt = "stmt";
@@ -107,14 +131,20 @@ const auto set_def = "set" >> (set_names | set_sql_mode | set_autocommit | set_a
 const auto slave_cmd_def = x3::lit("start") >> "slave" >> x3::attr(Slave::Start)
     | x3::lit("stop") >> "slave" >> x3::attr(Slave::Stop)
     | x3::lit("reset") >> "slave" >> x3::attr(Slave::Reset);
+// TODO what are the allowed keys and values (char wise) in "change master to"
+const auto change_master_key_def = identifier;
+const auto change_master_value_def = quoted_str | *(x3::char_ - (x3::lit(',') | '=' | ';'));
+const auto key_value_def = change_master_key >> '=' >> change_master_value;
+const auto change_master_def = x3::lit("change") >> x3::lit("master") >> x3::lit("to")
+    >> (key_value_def % ',');
 
-const auto sql_stmt_def = (select | set | slave_cmd) % ';' >> -x3::omit[";"];
+const auto sql_stmt_def = (select | set | slave_cmd | change_master) % ';' >> -x3::omit[";"];
 
 BOOST_SPIRIT_DEFINE(identifier, quoted_str, boolean,
                     variable, function, number, select_str, select,
                     show_var_like, show_status_like, show_misc, show,
                     set_names, set_sql_mode, set_autocommit, set_assign_str, set_assign, set,
-                    slave_cmd,
+                    slave_cmd, key_value, change_master_key, change_master_value, change_master,
                     sql_stmt);
 
 SqlStatement parse_sql(const std::string& sql)

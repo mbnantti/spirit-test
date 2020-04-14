@@ -15,27 +15,27 @@ struct SelectExecutor
         }
     }
 
-    void operator()(const sql_parser::SelectVar& var)
+    void operator()(const sql_parser::SessionVariable& var)
     {
         std::cout << "var=" << var.name << '\n';
     }
 
-    void operator()(const sql_parser::SelectGlob& glob)
+    void operator()(const sql_parser::GlobalVariable& glob)
     {
         std::cout << "glob=" << glob.name << '\n';
     }
 
-    void operator()(const sql_parser::SelectFct& fct)
+    void operator()(const sql_parser::Function& fct)
     {
         std::cout << "func=" << fct.name << '\n';
     }
 
-    void operator()(const sql_parser::SelectNumber& nbr)
+    void operator()(const sql_parser::Number& nbr)
     {
         std::cout << "number=" << nbr.value << '\n';
     }
 
-    void operator()(const sql_parser::SelectString& str)
+    void operator()(const sql_parser::StringIdent& str)
     {
         std::cout << "string=" << str.str << '\n';
     }
@@ -48,9 +48,9 @@ struct ShowExecutor
         boost::apply_visitor(*this, show);
     }
 
-    void operator()(const sql_parser::ShowVariablesLike& vlike)
+    void operator()(const sql_parser::ShowVariablesLike& var_like)
     {
-        std::cout << "vlike " << int(vlike.type) << ' ' << vlike.pattern << "\n";
+        std::cout << "var_like " << int(var_like.type) << ' ' << var_like.pattern << "\n";
     }
 
     void operator()(const sql_parser::ShowMisc& gen)

@@ -17,39 +17,45 @@ namespace sql_parser
 // https://github.com/boostorg/spirit/pull/178 and https://github.com/boostorg/spirit/issues/463.
 
 // SELECT
-struct SelectVar    // select @x
+struct SessionVariable
 {
     std::string name;
 };
 
-struct SelectGlob   // select @@z
+struct GlobalVariable
 {
     std::string name;
 };
 
-struct SelectFct    // select foo()
-{
-    std::string name;
-};
-
-struct SelectNumber     // select 1, select 3.14
+struct Number
 {
     double value;
 };
 
-struct SelectString     // select "Hello World!"
+/**
+ * @brief StringIdent - string or identifier, the context it is used in knows the difference
+ */
+struct StringIdent
 {
     std::string str;
+};
+
+/**
+ * @brief Function - nor arguments need to be supported yet
+ */
+struct Function
+{
+    std::string name;
 };
 
 struct Select;
 
 struct SelectExpr : boost::spirit::x3::variant<
-                      SelectVar
-                      , SelectGlob
-                      , SelectFct
-                      , SelectNumber
-                      , SelectString
+                      SessionVariable   // select @x
+                      , GlobalVariable  // select @@z
+                      , Function        // select foo()
+                      , Number          // select 1, select 3.14
+                      , StringIdent     // select "Hello World!"
                       >
 {
     using base_type::base_type;
@@ -62,23 +68,23 @@ struct Select : public std::vector<SelectExpr>
 };
 
 // SHOW
-enum class ShowType {Global, Session, All};
+enum class Domain {Global, Session, All};
 
 // All 'show' queries are grouped together, meaning they run in the same Visitor. No
 // particular reason for that, but it keeps things better organized.
 struct ShowVariablesLike    // show [global|session] variables like 'hello'
 {
-    ShowType    type;
+    Domain      type;
     std::string pattern;
 };
 
 struct ShowStatusLike   // show [global|session] status like 'hello'
 {
-    ShowType    type;
+    Domain      type;
     std::string pattern;
 };
 
-// There are some very specific queries that do not carry any data, so an enum
+// There are some very specific show queries that do not carry any data, so an enum
 // and a single type for them. If need be, they can be split up later.
 // show master status
 // show slave status
@@ -99,6 +105,17 @@ struct Show : boost::spirit::x3::variant<
 {
     using base_type::base_type;
     using base_type::operator=;
+};
+
+// SET
+/**
+ * @brief SetOperand
+ */
+struct SetOperand
+{
+    std::string name;
+    bool        is_variable;
+    bool        is_global;
 };
 
 /**

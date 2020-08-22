@@ -22,7 +22,7 @@
 //       that it preserves the order of the key value pairs.
 
 // NOTE: With the method of making everything a struct and using variants you essentially get an
-//       AST with the final data right out of the parser. I an not sure it scales that well, if
+//       AST with the final data right out of the parser. I am not sure it scales that well, if
 //       one were to parse a complete language, and especially if there was code generation
 //       from the AST. Not sure, I might be wrong.
 //       I made everything but ChangeMasterTo use variants. I don't think it is always
